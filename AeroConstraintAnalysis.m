@@ -75,52 +75,57 @@ TW_ingress = zeros(length(WTO_S_range),1);
 TW_boost = zeros(length(WTO_S_range),1);
 
 
-% populate TW matrices
+% populate T/W matrices
 for i = 1:length(WTO_S_range)
     WS = WTO_S_range(i);
     S_TO = W_TO_avg / WS; % ft^2
     S_cruise = W_cruise_avg / WS; % ft^2
 
-   
-    % takeoff TW
+    % Takeoff T/W
     WS_TO_avg = W_TO_avg / S_TO;
     CL_TO = WS_TO_avg / q_TO;
-    CD_cruise = CD0_cruise + (CL_TO^2 / (pi * AR_X51 * e));
-    LD_cruise = CL_TO / CD_cruise;
-    TW_takeoff(i) = 1 / LD_cruise;
-    
-    % cruise TW
+    CD_TO = CD0_cruise + (CL_TO^2 / (pi * AR_X51 * e));
+    LD_TO = CL_TO / CD_TO;
+    TW_takeoff(i) = 1 / LD_TO;
+
+    % Cruise T/W
     WS_cruise_avg = W_cruise_avg / S_cruise;
     CL_cruise = WS_cruise_avg / q_cruise;
     CD_cruise = CD0_cruise + (CL_cruise^2 / (pi * AR_X51 * e));
     LD_cruise = CL_cruise / CD_cruise;
     TW_cruise(i) = 1 / LD_cruise;
 
-    % ingress TW
+    % Ingress T/W
     WS_ingress = W_end / S_cruise;
-    CL_ingress = WS_ingress / q_ingress; % note CL_max = 0.6
+    CL_ingress = WS_ingress / q_ingress; % note CL_max = 0.6 constraint can be applied if desired
     CD_ingress = CD0_cruise + (CL_ingress^2 / (pi * AR_X51 * e));
     LD_ingress = CL_ingress / CD_ingress;
-    TW_ingress(i) = 1/LD_ingress;
+    TW_ingress(i) = 1 / LD_ingress;
 
-    % boost TW
-    accel_target = 80; % ft/s^2
+    % Boost T/W
+    accel_target = 80; % ft/s^2 (acceleration requirement during boost)
     TW_boost(i) = accel_target / g;
 end
 
 % % analyze T/W & W/S
-% TW_matrix = [TW_cruise, TW_ingress, TW_boost];
-% TW_max = max(TW_matrix, [], 2);
-% possible = (CL_ingress <= 0.6) & (TW_cruise <= 0.3) & (TW_boost <= 5);
-% WTO_S_possible = WTO_S_range(possible);
-% TW_max_possible = TW_max(possible);
-% if isempty(WTO_S_possible)
-%     error('No valid W/S found.')
-% end
+TW_matrix = [TW_takeoff, TW_cruise, TW_ingress, TW_boost];
+TW_max = max(TW_matrix, [], 2);
 
-% Final answers
-% [min_TW, i] = min(TW_max_possible);
-% optimal_WS = WTO_S_possible(i);
+[min_TW, idx_opt] = min(TW_max);
+optimal_WS = WTO_S_range(idx_opt);
+optimal_TW = min(TW_max);
+%possible = (CL_ingress <= 0.6) & (TW_cruise <= 0.3) & (TW_boost <= 5);
+%WTO_S_possible = WTO_S_range(possible);
+%TW_max_possible = TW_max(possible);
+%if isempty(WTO_S_possible)
+%    error('No valid W/S found.')
+%end
+
+%[min_TW, i] = min(TW_max_possible);
+%optimal_WS = WTO_S_possible(i);
+
+T_needed = optimal_TW*weight_X51
+S_needed = weight_X51/optimal_WS
 
 
 % plot T/W vs W/S
@@ -133,6 +138,6 @@ plot(WTO_S_range, TW_takeoff)
 % plot(optimal_WS, min_TW, '.', 'MarkerSize', 15)
 title('Constraint Plot for X-51 Inspired Design')
 xlabel('$\frac{W_{TO}}{S} (\frac{lb}{ft^2})$')
-ylabel('$\frac{T}{W}$')
+ylabel('$\frac{T}{W_{TO}}$')
 legend('Cruise','Ingress','Boost','Takeoff')
 hold off
